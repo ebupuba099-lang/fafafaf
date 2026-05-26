@@ -1,0 +1,37 @@
+name: 获取开奖号码
+
+on:
+  schedule:
+    - cron: '0 14 * * *'  # UTC 14:00 = 北京时间 22:00
+  workflow_dispatch:
+
+jobs:
+  lottery:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      - name: Install requests
+        run: pip install requests
+      
+      - name: Fetch lottery results
+        env:
+          GIST_ID: d32d11b8ed886ed36b2d2cf57e693e54
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: python scripts/lottery.py
+      
+      - name: Sync data to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/lottery_data.json
+          git diff --cached --quiet || git commit -m "🤖 自动更新开奖号码 $(date +%Y-%m-%d)"
+          git push
