@@ -1,37 +1,45 @@
-name: 生成新一期序列
-
+name: 发发发每日生成
 on:
   schedule:
-    - cron: '27 22 * * *'  # UTC 22:27 = 北京时间 06:27
+    - cron: '27 22 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-      
-      - name: Install requests
-        run: pip install requests
-      
-      - name: Generate new sequences
+          python-version: '3.11'
+      - name: 执行生成脚本
         env:
-          GIST_ID: d32d11b8ed886ed36b2d2cf57e693e54
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         run: python scripts/generate.py
-      
-      - name: Sync data to repo
+      - name: 同步数据到仓库
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: d32d11b8ed886ed36b2d2cf57e693e54
+        run: |
+          mkdir -p data
+          curl -s -H "Authorization: token $GIST_TOKEN" \
+            "https://api.github.com/gists/$GIST_ID" > /tmp/gist.json
+          python3 -c "
+          import json
+          with open('/tmp/gist.json') as f:
+              data = json.load(f)
+          content = data['files']['lottery_data.json']['content']
+          with open('data/lottery_data.json', 'w') as f:
+              f.write(content)
+          print('Synced data/lottery_data.json from Gist')
+          "
+      - name: 提交并推送
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/lottery_data.json
-          git diff --cached --quiet || git commit -m "🤖 自动生成新一期序列 $(date +%Y-%m-%d)"
+          git diff --cached --quiet || git commit -m "auto: sync data from Gist [generate]"
           git push
