@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>发发发</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(180deg, #b71c1c 0%, #d32f2f 30%, #fff 70%, #fafafa 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* Tab栏容器 */
+        .tab-bar {
+            background: linear-gradient(135deg, #b71c1c, #d32f2f);
+            padding: 10px 15px 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 2px solid #ffd700;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tab-bar::before {
+            content: '🎰';
+            font-size: 18px;
+            margin-right: 5px;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        .tab-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex-wrap: wrap;
+        }
+
+        .tab-separator {
+            color: #ffd700;
+            font-size: 20px;
+            padding: 5px 10px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255,215,0,0.5);
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            position: relative;
+            border: 2px solid transparent;
+            border-bottom: none;
+            color: #fff;
+        }
+
+        .tab:hover {
+            filter: brightness(1.2);
+        }
+
+        .tab.active {
+            background: var(--tab-color, #b71c1c);
+            color: #ffd700;
+        }
+
+        .tab .close-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 18px;
+            height: 18px;
+            background: #ff4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .tab:hover .close-btn {
+            opacity: 1;
+        }
+
+        .add-tab-btn {
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: 2px dashed #ffd700;
+            border-radius: 50%;
+            color: #ffd700;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .add-tab-btn:hover {
+            background: rgba(255, 215, 0, 0.3);
+        }
+
+        /* 内容区域 */
+        .content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            color: #333;
+            border: 1px solid #eee;
+        }
+
+        .card-title {
+            color: #b71c1c;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ffcdd2;
+        }
+
+        /* 期数显示 */
+        .period-display {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .period-label {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .period-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #b71c1c;
+        }
+
+        .period-date {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        /* 老虎机区域 */
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .slot-item {
+            text-align: center;
+        }
+
+        .slot-label {
+            color: var(--page-color, #b71c1c);
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .slot-box {
+            width: 60px;
+            height: 80px;
+            background: #fff;
+            border: 3px solid var(--page-color, #b71c1c);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--page-color, #b71c1c);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slot-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+            pointer-events: none;
+        }
+
+        .slot-box::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(to top, rgba(0,0,0,0.2), transparent);
+            pointer-events: none;
+        }
+
+        .slot-box.spinning {
+            animation: slotGlow 0.1s infinite alternate;
+        }
+
+        @keyframes slotGlow {
+            from { box-shadow: 0 0 10px var(--page-color, #b71c1c); }
+            to { box-shadow: 0 0 25px var(--page-color, #b71c1c); }
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .count-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .count-selector label {
+            color: #b71c1c;
+            margin-right: 5px;
+        }
+
+        .count-option {
+            width: 40px;
+            height: 40px;
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            color: #333;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .count-option:hover {
+            border-color: var(--page-color, #b71c1c);
+        }
+
+        .count-option.selected {
+            background: var(--page-color, #b71c1c);
+            border-color: var(--page-color, #b71c1c);
+            color: #fff;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--page-color, #b71c1c), var(--page-color-light, #e53935));
+            color: #ffd700;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #1e653a, #2e7d32);
+            color: #ffd700;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* 结果展示 */
+        .result-area {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #eee;
+        }
+
+        .result-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #fff;
+            border-radius: 5px;
+            border-left: 3px solid var(--page-color, #b71c1c);
+        }
+
+        .result-label {
+            color: var(--page-color, #b71c1c);
+            width: 70px;
+            font-weight: bold;
+        }
+
+        .result-sequence {
+            color: #555;
+            word-break: break-all;
+        }
+
+        .result-sequence span {
+            margin-right: 8px;
+            color: #888;
+        }
+
+        .result-sequence span:last-child {
+            color: #b71c1c;
+            font-weight: bold;
+        }
+
+        /* 表格页样式 */
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .table-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* 输入区域 */
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #b71c1c;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 10px 15px;
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            color: #333;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--page-color, #b71c1c);
+        }
+
+        .input-group textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .input-row .input-group {
+            flex: 1;
+        }
+
+        /* 数字输入框 */
+        .number-input {
+            width: 160px !important;
+            text-align: center;
+            font-size: 28px !important;
+            letter-spacing: 12px;
+        }
+
+        /* 表格样式 */
+        .data-table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 3px solid var(--page-color, #2e7d32);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 3px 2px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+
+        .data-table th {
+            background: var(--page-color, #2e7d32);
+            color: #fff;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 6px 2px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .data-table td {
+            background: #fff;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        .data-table tr:hover td {
+            background: #fff8f0 !important;
+        }
+
+        /* 期数和结果列固定窄宽 */
+        .data-table td.col-period,
+        .data-table td.col-result {
+            vertical-align: middle;
+            min-width: auto;
+            white-space: nowrap;
+        }
+
+        .data-table td.col-result {
+            font-size: 14px;
+        }
+
+        /* 序列单元格 */
+        .seq-cell {
+            text-align: left;
+            padding: 2px;
+            min-width: auto;
+        }
+
+        .seq-layer {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #888;
+            white-space: nowrap;
+        }
+
+        .seq-layer.hit-layer {
+            background: #fff3e0;
+            color: #e65100;
+            font-weight: bold;
+            border-radius: 3px;
+            padding: 0 4px;
+            border: 1px solid #ffcc80;
+        }
+
+        .seq-layer.final-layer {
+            color: var(--page-color, #b71c1c);
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        /* 旧期简化显示 */
+        .seq-cell.compact .seq-layer {
+            font-size: 12px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .hit-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .hit-0 { background: #E53935; color: #fff; }
+        .hit-1 { background: #FF6D00; color: #fff; }
+        .hit-2 { background: #FFB300; color: #fff; }
+        .hit-3 { background: #FDD835; color: #333; }
+        .hit-4 { background: #7CB342; color: #fff; }
+        .hit-5 { background: #00897B; color: #fff; }
+        .hit-6 { background: #1E88E5; color: #fff; }
+        .hit-7 { background: #5E35B1; color: #fff; }
+        .hit-8 { background: #8E24AA; color: #fff; }
+        .hit-9 { background: #D81B60; color: #fff; }
+
+        /* 装饰图片 */
+        .table-decor {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            max-width: 100px;
+            max-height: 100px;
+            opacity: 0.8;
+        }
+
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+            color: #333;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            color: #b71c1c;
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn-cancel {
+            background: #999;
+            color: #fff;
+        }
+
+        .btn-cancel:hover {
+            background: #777;
+        }
+
+        /* 颜色选择器 */
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .color-picker-wrapper input[type="color"] {
+            width: 60px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .color-presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-preset {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .color-preset:hover,
+        .color-preset.selected {
+            border-color: #ffd700;
+            transform: scale(1.1);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2e7d32;
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 2000;
+            transition: transform 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* 水印输入 */
+        .watermark-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .watermark-input input {
+            flex: 1;
+            padding: 8px 15px;
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            color: #333;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state p {
+            margin-bottom: 15px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .slot-machine {
+                gap: 10px;
+            }
+
+            .slot-box {
+                width: 50px;
+                height: 65px;
+                font-size: 28px;
+            }
+
+            .slot-label {
+                font-size: 14px;
+            }
+
+            .period-value {
+                font-size: 36px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .table-actions {
+                justify-content: center;
+            }
+
+            .data-table {
+                font-size: 12px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Tab栏 -->
+    <div class="tab-bar" id="tabBar">
+        <div class="tab-group" id="toolTabs">
+            <!-- 随机工具Tab将在这里动态生成 -->
+        </div>
+        <span class="tab-separator">|</span>
+        <div class="tab-group" id="tableTabs">
+            <!-- 表格页Tab将在这里动态生成 -->
+        </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" id="content">
+        <!-- 页面将在这里动态生成 -->
+    </div>
+
+    <!-- 弹窗：随机工具设置 -->
+    <div class="modal-overlay" id="toolModal">
+        <div class="modal">
+            <div class="modal-title" id="toolModalTitle">添加随机工具</div>
+            <div class="input-group">
+                <label>工具名称</label>
+                <input type="text" id="toolName" placeholder="例如：发发发">
+            </div>
+            <div class="input-group">
+                <label>主题颜色</label>
+                <div class="color-picker-wrapper">
+                    <input type="color" id="toolColor" value="#b71c1c">
+                    <div class="color-presets">
+                        <div class="color-preset selected" style="background: #b71c1c" data-color="#b71c1c"></div>
+                        <div class="color-preset" style="background: #1565c0" data-color="#1565c0"></div>
+                        <div class="color-preset" style="background: #2e7d32" data-color="#2e7d32"></div>
+                        <div class="color-preset" style="background: #f57c00" data-color="#f57c00"></div>
+                        <div class="color-preset" style="background: #7b1fa2" data-color="#7b1fa2"></div>
+                        <div class="color-preset" style="background: #00838f" data-color="#00838f"></div>
+                        <div class="color-preset" style="background: #c62828" data-color="#c62828"></div>
+                        <div class="color-preset" style="background: #ad1457" data-color="#ad1457"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>复制头部信息</label>
+                <input type="text" id="toolHeader" placeholder="例如：[發]发发发[發]">
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>期数基准值</label>
+                    <input type="number" id="toolBasePeriod" placeholder="例如：2026120">
+                </div>
+                <div class="input-group">
+                    <label>基准日期</label>
+                    <input type="date" id="toolBaseDate">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeToolModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveToolModal()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗：表格页设置 -->
+    <div class="modal-overlay" id="tableModal">
+        <div class="modal">
+            <div class="modal-title" id="tableModalTitle">添加表格页</div>
+            <div class="input-group">
+                <label>表格名称</label>
+                <input type="text" id="tableName" placeholder="例如：文心兰">
+            </div>
+            <div class="input-group">
+                <label>主题颜色</label>
+                <div class="color-picker-wrapper">
+                    <input type="color" id="tableColor" value="#2e7d32">
+                    <div class="color-presets">
+                        <div class="color-preset selected" style="background: #2e7d32" data-color="#2e7d32"></div>
+                        <div class="color-preset" style="background: #b71c1c" data-color="#b71c1c"></div>
+                        <div class="color-preset" style="background: #1565c0" data-color="#1565c0"></div>
+                        <div class="color-preset" style="background: #f57c00" data-color="#f57c00"></div>
+                        <div class="color-preset" style="background: #7b1fa2" data-color="#7b1fa2"></div>
+                        <div class="color-preset" style="background: #00838f" data-color="#00838f"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>装饰图片URL（可选）</label>
+                <input type="text" id="tableDecor" placeholder="输入图片URL">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeTableModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTableModal()">保存</button>
+            </div>
+        </div>
+    </div>
+
+        <!-- Toast -->
+    <div class="toast" id="toast">复制成功！</div>
+
+    <script>
+        // ========== 自动加载同域数据 ==========
+        
+        // 自动从同域data/目录加载最新数据
+        async function autoLoadFromCloud() {
+            try {
+                const resp = await fetch('data/lottery_data.json');
+                if (!resp.ok) throw new Error('加载失败: ' + resp.status);
+                const data = await resp.json();
+                if (data && (data.toolPages || data.tablePages)) {
+                    toolPages = data.toolPages || {};
+                    tablePages = data.tablePages || {};
+                    // 兼容旧数据：确保records和winning字段存在
+                    for (const id in tablePages) {
+                        if (!tablePages[id].records) tablePages[id].records = [];
+                        tablePages[id].records.forEach(r => {
+                            if (r.winning === undefined) r.winning = '';
+                        });
+                    }
+                    saveDataLocal();
+                    renderTabs();
+                    const toolIds = Object.keys(toolPages);
+                    if (toolIds.length > 0) {
+                        activateTool(toolIds[0]);
+                    } else {
+                        const tableIds = Object.keys(tablePages);
+                        if (tableIds.length > 0) {
+                            activateTable(tableIds[0]);
+                        }
+                    }
+                    console.log('自动加载数据成功');
+                }
+            } catch (e) {
+                console.error('自动加载数据失败:', e);
+                // 加载失败时使用本地缓存
+                renderTabs();
+                const toolIds = Object.keys(toolPages);
+                if (toolIds.length > 0) {
+                    activateTool(toolIds[0]);
+                } else {
+                    const tableIds = Object.keys(tablePages);
+                    if (tableIds.length > 0) {
+                        activateTable(tableIds[0]);
+                    }
+                }
+            }
+        }
+
+        // 数据存储
+        let toolPages = {};
+        let tablePages = {};
+        let activeToolId = null;
+        let activeTableId = null;
+        let editingToolId = null;
+        let editingTableId = null;
+
+        // 初始化
+        function init() {
+            loadData();
+            
+            // 自动从同域数据文件加载最新数据
+            autoLoadFromCloud();
+        }
+
+        // 数据持久化
+        function saveDataLocal() {
+            localStorage.setItem('lotteryToolData', JSON.stringify({
+                toolPages,
+                tablePages
+            }));
+        }
+
+        function saveData() {
+            saveDataLocal();
+        }
+
+        const DATA_VERSION = 5;
+        
+        function loadData() {
+            try {
+                // 版本检测：如果版本不匹配，清除旧缓存强制从远端同步
+                const savedVersion = localStorage.getItem('lotteryDataVersion');
+                if (savedVersion && parseInt(savedVersion) < DATA_VERSION) {
+                    console.log('数据版本过低，清除本地缓存');
+                    localStorage.removeItem('lotteryToolData');
+                    localStorage.removeItem('lastRemoteUpdate');
+                }
+                localStorage.setItem('lotteryDataVersion', DATA_VERSION.toString());
+
+                const data = localStorage.getItem('lotteryToolData');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    toolPages = parsed.toolPages || {};
+                    tablePages = parsed.tablePages || {};
+                    // 兼容旧数据：确保records存在且winning字段存在
+                    for (const id in tablePages) {
+                        if (!tablePages[id].records) tablePages[id].records = [];
+                        tablePages[id].records.forEach(r => {
+                            if (r.winning === undefined) r.winning = '';
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('数据加载失败，重置数据:', e);
+                localStorage.removeItem('lotteryToolData');
+                toolPages = {};
+                tablePages = {};
+            }
+        }
+
+        // Tab渲染
+        function renderTabs() {
+            renderToolTabs();
+            renderTableTabs();
+        }
+
+        function renderToolTabs() {
+            const container = document.getElementById('toolTabs');
+            container.innerHTML = '';
+
+            for (const id in toolPages) {
+                const tool = toolPages[id];
+                const tab = document.createElement('div');
+                tab.className = `tab ${id === activeToolId ? 'active' : ''}`;
+                tab.style.setProperty('--tab-color', tool.color);
+                tab.onclick = () => activateTool(id);
+                tab.ondblclick = () => editTool(id);
+                tab.innerHTML = `
+                    ${tool.name}
+                    <span class="close-btn" onclick="event.stopPropagation(); deleteTool('${id}')">×</span>
+                `;
+                container.appendChild(tab);
+            }
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'add-tab-btn';
+            addBtn.innerHTML = '+';
+            addBtn.onclick = addTool;
+            container.appendChild(addBtn);
+        }
+
+        function renderTableTabs() {
+            const container = document.getElementById('tableTabs');
+            container.innerHTML = '';
+
+            for (const id in tablePages) {
+                const table = tablePages[id];
+                const tab = document.createElement('div');
+                tab.className = `tab ${id === activeTableId ? 'active' : ''}`;
+                tab.style.setProperty('--tab-color', table.color);
+                tab.onclick = () => activateTable(id);
+                tab.ondblclick = () => editTable(id);
+                tab.innerHTML = `
+                    ${table.name}
+                    <span class="close-btn" onclick="event.stopPropagation(); deleteTable('${id}')">×</span>
+                `;
+                container.appendChild(tab);
+            }
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'add-tab-btn';
+            addBtn.innerHTML = '+';
+            addBtn.onclick = addTable;
+            container.appendChild(addBtn);
+        }
+
+        // 激活页面
+        function activateTool(id) {
+            activeToolId = id;
+            activeTableId = null;
+            renderTabs();
+            renderToolPage(id);
+        }
+
+        function activateTable(id) {
+            activeTableId = id;
+            activeToolId = null;
+            renderTabs();
+            renderTablePage(id);
+        }
+
+        // 随机工具页面渲染
+        function renderToolPage(id) {
+            const tool = toolPages[id];
+            if (!tool) return;
+
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="page active" id="page-${id}">
+                    <div class="card" style="--page-color: ${tool.color}; --page-color-light: ${lightenColor(tool.color)}">
+                        <!-- 页面标题 -->
+                        <div style="text-align:center; margin-bottom:10px;">
+                            <span style="font-size:20px; font-weight:bold; color:${tool.color};">${tool.header || tool.name}</span>
+                        </div>
+                        <!-- 期数显示 -->
+                        <div class="period-display">
+                            <div class="period-label">当前期数</div>
+                            <div class="period-value" id="period-${id}">${calculatePeriod(tool.basePeriod, tool.baseDate)}</div>
+                            <div class="period-date">${new Date().toLocaleDateString('zh-CN')}</div>
+                        </div>
+
+                        <!-- 老虎机 -->
+                        <div class="slot-machine" id="slots-${id}">
+                            ${['千', '百', '十', '个', '头尾合'].map(pos => `
+                                <div class="slot-item">
+                                    <div class="slot-label">${pos}</div>
+                                    <div class="slot-box" id="slot-${id}-${pos}">-</div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- 控制区 -->
+                        <div class="controls">
+                            <button class="btn btn-primary" onclick="startGenerate('${id}')">开始生成</button>
+                            <button class="btn btn-secondary" onclick="copyResult('${id}')">一键复制</button>
+                        </div>
+
+                        <!-- 结果展示 -->
+                        <div class="result-area" id="result-${id}">
+                            ${tool.result ? renderResult(tool.result) : '<div class="empty-state"><p>点击"开始生成"来生成序列</p></div>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 更新老虎机显示
+            if (tool.result) {
+                updateSlots(id, tool.result);
+            }
+        }
+
+        function renderResult(result) {
+            const positions = ['千', '百', '十', '个', '头尾合'];
+            return positions.map(pos => {
+                const seq = result[pos];
+                if (!seq || seq.length === 0) return '';
+                return `
+                    <div class="result-row">
+                        <div class="result-label">${pos}</div>
+                        <div class="result-sequence">
+                            ${seq.map((s, i) => `<span>${s}</span>`).join(' → ')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateSlots(id, result) {
+            const positions = ['千', '百', '十', '个', '头尾合'];
+            positions.forEach(pos => {
+                const seq = result[pos];
+                if (seq && seq.length > 0) {
+                    const slot = document.getElementById(`slot-${id}-${pos}`);
+                    if (slot) {
+                        // 取最后一个数字（递减序列的最后一个）
+                        const lastSeq = seq[seq.length - 1];
+                        slot.textContent = lastSeq.slice(-1);
+                    }
+                }
+            });
+        }
+
+        // 期数计算
+        function calculatePeriod(basePeriod, baseDate) {
+            const base = new Date(baseDate);
+            const today = new Date();
+            const diffDays = Math.floor((today - base) / (1000 * 60 * 60 * 24));
+            return basePeriod + diffDays;
+        }
+
+        // 设置显示数量
+        function setCount(id, count) {
+            toolPages[id].count = count;
+            saveData();
+            renderToolPage(id);
+        }
+
+        // 开始生成
+        function startGenerate(id) {
+            const tool = toolPages[id];
+            
+            const slots = document.querySelectorAll(`#slots-${id} .slot-box`);
+            slots.forEach(slot => slot.classList.add('spinning'));
+
+            // 随机延迟
+            const delays = [1000, 1200, 1400, 1600, 1800];
+            const result = {};
+            const positions = ['千', '百', '十', '个', '头尾合'];
+
+            positions.forEach((pos, index) => {
+                setTimeout(() => {
+                    // 随机打乱0-9，取前9位（不按顺序）
+                    const digits = shuffleArray([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                    const selected = digits.slice(0, 9); // 取9个随机数字
+                    
+                    // 从9位中随机去掉1位变8位，再去1位变7位...直到1位
+                    const sequence = generateDecreasingSequence(selected);
+
+                    result[pos] = sequence;
+
+                    // 更新老虎机 - 显示最终1个数字
+                    const slot = document.getElementById(`slot-${id}-${pos}`);
+                    if (slot) {
+                        slot.classList.remove('spinning');
+                        slot.textContent = sequence[sequence.length - 1];
+                    }
+
+                    // 更新结果
+                    const resultArea = document.getElementById(`result-${id}`);
+                    if (resultArea) {
+                        resultArea.innerHTML = renderResult(result);
+                    }
+
+                    toolPages[id].result = result;
+                    saveData();
+
+                }, delays[index]);
+            });
+        }
+
+        // 随机排列
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // 生成递减序列
+        function generateDecreasingSequence(digits) {
+            const sequence = [];
+            let current = [...digits];
+            sequence.push(current.join(''));
+            
+            while (current.length > 1) {
+                const removeIndex = Math.floor(Math.random() * current.length);
+                current.splice(removeIndex, 1);
+                sequence.push(current.join(''));
+            }
+            
+            return sequence;
+        }
+
+        // 复制结果
+        function copyResult(id) {
+            const tool = toolPages[id];
+            if (!tool.result) {
+                showToast('请先生成序列');
+                return;
+            }
+
+            const positions = ['千', '百', '十', '个', '头尾合'];
+            let text = `${tool.header}\n${calculatePeriod(tool.basePeriod, tool.baseDate)}\n-------------------\n`;
+            
+            positions.forEach(pos => {
+                const seq = tool.result[pos];
+                if (seq && seq.length > 0) {
+                    text += `${pos} ${seq.join(' ')}\n---------------\n`;
+                }
+            });
+
+            copyToClipboard(text);
+        }
+
+        // 复制功能
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('复制成功！');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('复制成功！');
+            } catch (e) {
+                showToast('复制失败，请手动复制');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // Toast
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 表格页渲染
+        function renderTablePage(id) {
+            try {
+            const table = tablePages[id];
+            if (!table) return;
+
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="page active" id="page-${id}">
+                    <div class="card" style="--page-color: ${table.color}">
+                        <div class="table-toolbar">
+                            <div class="table-info">
+                                <h3 style="color: ${table.color}">${table.name}</h3>
+                            </div>
+                            <div class="table-actions">
+                                <button class="btn btn-secondary" onclick="downloadTableImage('${id}')">下载图片</button>
+                                <button class="btn btn-cancel" onclick="clearTableData('${id}')">清空数据</button>
+                            </div>
+                        </div>
+
+                        <!-- 输入区域 -->
+                        <div class="card" style="background: #fafafa; margin-bottom: 15px; border: 1px solid #eee;">
+                            <div class="input-group">
+                                <label>粘贴数据（支持解析递减序列）</label>
+                                <textarea id="paste-${id}" placeholder="粘贴格式：&#10;千 041356798 04135678 ...&#10;百 435621790 ...&#10;..."></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="parseAndAdd('${id}')">解析并添加</button>
+                        </div>
+
+
+
+                        <!-- 水印设置 -->
+                        <div class="card" style="background: #fafafa; margin-bottom: 15px; border: 1px solid #eee;">
+                            <div class="input-group">
+                                <label>水印文字（下载图片时添加）</label>
+                                <div class="watermark-input">
+                                    <input type="text" id="watermark-${id}" placeholder="输入水印文字" value="🎰 发财就手统计 🎰">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 表格展示 -->
+                        <div class="data-table-wrapper" id="tableWrapper-${id}" style="position: relative;">
+                            ${renderTableData(table)}
+                            ${table.decorUrl ? `<img src="${table.decorUrl}" class="table-decor" onerror="this.style.display='none'">` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            } catch(e) { console.error('renderTablePage错误:', e); }
+        }
+
+        function renderTableData(table) {
+            if (table.records.length === 0) {
+                return '<div class="empty-state"><p>暂无数据，请粘贴数据后解析</p></div>';
+            }
+
+            let html = `
+                <div style="text-align:center; padding:10px 0; font-size:18px; font-weight:bold; color:${table.color};">
+                    ${table.name}
+                </div>
+                <table class="data-table" style="--page-color: ${table.color}">
+                    <thead>
+                        <tr>
+                            <th>期数</th>
+                            <th>结果</th>
+                            <th>千位</th>
+                            <th>百位</th>
+                            <th>十位</th>
+                            <th>个位</th>
+                            <th>头尾合</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            table.records.forEach((record, index) => {
+                const positions = ['千', '百', '十', '个', '头尾合'];
+                const winningNum = record.winning || '';
+                const qian = winningNum[0] || '';
+                const bai = winningNum[1] || '';
+                const shi = winningNum[2] || '';
+                const ge = winningNum[3] || '';
+                const touWeiHe = qian && ge ? (parseInt(qian) + parseInt(ge)) % 10 : '';
+                const isLatest = (index === 0); // 最新的那一期才显示完整序列
+
+                html += '<tr>';
+                html += `<td class="col-period" style="color:${table.color}; font-weight:bold;">${record.period}</td>`;
+                // 每行独立的开奖号码输入
+                const tid = table.id;
+                html += `<td class="col-result" style="min-width:80px;">
+                    <div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+                        <input type="text" id="win-${tid}-${index}" value="${winningNum}" maxlength="4" placeholder="0000"
+                            style="width:52px;padding:2px 4px;font-size:13px;text-align:center;border:1px solid #ccc;border-radius:4px;"
+                            onkeydown="if(event.key==='Enter')applyWinningForRow('${tid}',${index})">
+                        <button onclick="applyWinningForRow('${tid}',${index})" style="background:${table.color};color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;white-space:nowrap;">开</button>
+                    </div>
+                </td>`;
+
+                positions.forEach(pos => {
+                    const seq = record.sequences[pos] || [];
+                    const targetDigit = pos === '千' ? qian : pos === '百' ? bai : pos === '十' ? shi : pos === '个' ? ge : touWeiHe;
+                    
+                    let cellContent = '';
+                    let cellClass = 'seq-cell';
+                    
+                    if (seq.length > 0) {
+                        if (targetDigit !== '' && !isNaN(targetDigit)) {
+                            // 有开奖号码：显示9位数字，命中的数字高亮（所有期统一）
+                            const hit = calculateHit(seq, targetDigit);
+                            const hitClass = 'hit-' + hit.hit;
+                            const nineDigit = seq[0];
+                            let highlighted = '';
+                            for (let c of nineDigit) {
+                                if (c === targetDigit.toString()) {
+                                    highlighted += `<span style="color:#e65100;font-weight:bold;text-decoration:underline;">${c}</span>`;
+                                } else {
+                                    highlighted += c;
+                                }
+                            }
+                            if (!isLatest) {
+                                cellClass += ' compact';
+                                cellContent = `<span class="hit-badge ${hitClass}">中${hit.hit}粒</span> <span class="seq-layer" style="font-size:12px;color:#333;">${highlighted}</span>`;
+                            } else {
+                                // 最新期：9位高亮 + 完整竖排序列
+                                cellContent = `<span class="hit-badge ${hitClass}">中${hit.hit}粒</span> <span class="seq-layer" style="font-size:12px;color:#333;">${highlighted}</span><br>`;
+                                cellContent += formatSequenceVerticalNoHighlight(seq, table.color);
+                            }
+                        } else {
+                            // 没有开奖号码：不高亮
+                            if (!isLatest) {
+                                cellClass += ' compact';
+                                cellContent = `<span class="seq-layer" style="color:#444;font-size:12px;">${seq[0]}</span>`;
+                            } else {
+                                cellContent = formatSequenceVerticalNoHighlight(seq, table.color);
+                            }
+                        }
+                    }
+
+                    html += `<td class="${cellClass}">${cellContent}</td>`;
+                });
+
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            html += `
+                <div style="text-align:center; padding:12px 0 8px; font-size:15px; font-weight:bold; color:${table.color};">
+                    🎰 发财就手统计 🎰 祝君发财 期期得胜👍
+                </div>
+            `;
+            return html;
+        }
+
+        // 竖排显示序列，不高亮（最新期用）
+        function formatSequenceVerticalNoHighlight(seq, color) {
+            let html = '';
+            seq.forEach((s, i) => {
+                let cls = 'seq-layer';
+                if (i === seq.length - 1) {
+                    cls += ' final-layer';
+                } else {
+                    // 非最后一层，颜色深一点
+                    cls += '';
+                }
+                html += `<div class="${cls}" style="color:${i === seq.length - 1 ? color : '#444'}">${s}</div>`;
+            });
+            return html;
+        }
+
+        // 竖排显示序列，命中层高亮
+        function formatSequenceVertical(seq, hitIndex, color) {
+            let html = '';
+            seq.forEach((s, i) => {
+                let cls = 'seq-layer';
+                if (i === hitIndex) {
+                    cls += ' hit-layer';
+                } else if (i === seq.length - 1) {
+                    cls += ' final-layer';
+                }
+                html += `<div class="${cls}">${s}</div>`;
+            });
+            return html;
+        }
+
+        // 横排显示序列（备用）
+        function formatSequence(seq, hitIndex) {
+            if (hitIndex < 0) {
+                return `<span class="seq-layer">${seq.join(' → ')}</span>`;
+            }
+
+            const parts = seq.map((s, i) => {
+                if (i === hitIndex) {
+                    return `<span class="hit-layer">${s}</span>`;
+                }
+                return s;
+            });
+
+            return `<span class="seq-layer">${parts.join(' → ')}</span>`;
+        }
+
+        function calculateHit(sequence, targetDigit) {
+            const target = targetDigit.toString();
+            
+            // 从最后一层(索引最大)往上找
+            for (let i = sequence.length - 1; i >= 0; i--) {
+                if (sequence[i].includes(target)) {
+                    return {
+                        hit: sequence[i].length,
+                        hitLayerIndex: i,
+                        target: targetDigit
+                    };
+                }
+            }
+            
+            return { hit: 0, hitLayerIndex: -1, target: targetDigit };
+        }
+
+        // 解析粘贴的文本
+        function parsePastedText(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            
+            let period = null;
+            let header = '';
+            const sequences = {};
+            
+            // 提取期数：遍历前几行找连续6+位数字
+            for (let i = 0; i < Math.min(5, lines.length); i++) {
+                const pureDigits = lines[i].replace(/[^0-9]/g, '');
+                if (pureDigits.length >= 6 && !lines[i].match(/^[千百十个头尾合]/)) {
+                    period = pureDigits;
+                    if (i === 0) header = lines[i];
+                    break;
+                }
+            }
+            
+            // 如果没找到6位数字，尝试日期格式
+            if (!period) {
+                for (let i = 0; i < Math.min(5, lines.length); i++) {
+                    const dateMatch = lines[i].match(/(\d{4})\/(\d{2})\/(\d{2})/);
+                    if (dateMatch) {
+                        period = dateMatch[1] + dateMatch[2] + dateMatch[3];
+                        break;
+                    }
+                }
+            }
+
+            // 提取序列
+            const posLabels = ['头尾合', '千', '百', '十', '个']; // 长的先匹配
+            lines.forEach(line => {
+                for (const label of posLabels) {
+                    if (line.startsWith(label)) {
+                        const rest = line.substring(label.length).trim();
+                        const nums = rest.split(/\s+/).filter(s => /^\d+$/.test(s));
+                        if (nums.length > 0) {
+                            sequences[label] = nums;
+                        }
+                        break;
+                    }
+                }
+            });
+            
+            return { period, header, sequences };
+        }
+
+        // 解析并添加
+        function parseAndAdd(id) {
+            try {
+            const pasteArea = document.getElementById(`paste-${id}`);
+            if (!pasteArea) { showToast('找不到输入框'); return; }
+            const text = pasteArea.value;
+            
+            if (!text.trim()) {
+                showToast('请输入要解析的数据');
+                return;
+            }
+
+            const parsed = parsePastedText(text);
+            
+            if (!parsed.period) {
+                showToast('未找到期数信息，请确保数据第一行有6位以上数字（期数）');
+                return;
+            }
+
+            if (Object.keys(parsed.sequences).length === 0) {
+                showToast('未找到有效的序列数据，请确保有 千/百/十/个/头尾合 开头的行');
+                return;
+            }
+
+            const table = tablePages[id];
+            if (!table) { showToast('数据表不存在'); return; }
+            table.records.push({
+                period: parsed.period,
+                header: parsed.header || '',
+                sequences: parsed.sequences,
+                winning: ''
+            });
+
+            // 按期数排序
+            table.records.sort((a, b) => b.period - a.period);
+
+            // 最多保留30条，超出顶掉最旧的
+            if (table.records.length > 30) {
+                table.records = table.records.slice(0, 30);
+            }
+
+            saveData();
+            renderTablePage(id);
+            pasteArea.value = '';
+            showToast('数据添加成功！');
+            } catch(e) { console.error('parseAndAdd错误:', e); showToast('解析出错: ' + e.message); }
+        }
+
+        // 应用开奖号码到指定行
+        function applyWinningForRow(id, index) {
+            const input = document.getElementById(`win-${id}-${index}`);
+            const num = input.value.trim();
+            
+            if (num.length !== 4 || !/^\d{4}$/.test(num)) {
+                showToast('请输入4位数字');
+                return;
+            }
+
+            const table = tablePages[id];
+            if (table.records[index]) {
+                table.records[index].winning = num;
+                saveData();
+                renderTablePage(id);
+                showToast(`期${table.records[index].period} 已计算中X粒！`);
+            }
+        }
+
+        // 旧版：应用到所有记录（已废弃，保留兼容）
+        function applyWinning(id) {
+            const table = tablePages[id];
+            if (table.records.length > 0) {
+                // 读取第一行的输入
+                const input = document.getElementById(`win-${id}-0`);
+                if (input) {
+                    const num = input.value.trim();
+                    if (num.length === 4 && /^\d{4}$/.test(num)) {
+                        applyWinningForRow(id, 0);
+                        return;
+                    }
+                }
+                showToast('请输入4位数字');
+            }
+        }
+
+        // 清空数据
+        function clearTableData(id) {
+            if (confirm('确定要清空所有数据吗？')) {
+                tablePages[id].records = [];
+                saveData();
+                renderTablePage(id);
+                showToast('数据已清空');
+            }
+        }
+
+        // 下载图片
+        async function downloadTableImage(id) {
+            const watermark = document.getElementById(`watermark-${id}`).value || tablePages[id].name;
+            
+            try {
+                const wrapper = document.getElementById(`tableWrapper-${id}`);
+                
+                // 临时设置固定宽度，确保截图比例一致（不管手机还是电脑）
+                const originalWidth = wrapper.style.width;
+                const originalOverflow = wrapper.style.overflow;
+                wrapper.style.width = '800px';
+                wrapper.style.overflow = 'visible';
+                
+                const canvas = await html2canvas(wrapper, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    width: 800,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: 800
+                });
+                
+                // 恢复原始宽度
+                wrapper.style.width = originalWidth;
+                wrapper.style.overflow = originalOverflow;
+
+                // 添加水印
+                const ctx = canvas.getContext('2d');
+                if (watermark) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.15;
+                    ctx.fillStyle = '#888';
+                    ctx.font = '24px Microsoft YaHei';
+                    ctx.rotate(-Math.PI / 6);
+
+                    const textWidth = ctx.measureText(watermark).width;
+                    const step = 200;
+                    
+                    for (let x = -canvas.width; x < canvas.width * 2; x += textWidth + step) {
+                        for (let y = -canvas.height; y < canvas.height * 2; y += 80) {
+                            ctx.fillText(watermark, x, y);
+                        }
+                    }
+                    
+                    ctx.restore();
+                }
+
+                // 转为blob
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                
+                // iOS检测
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                
+                if (isIOS && navigator.share) {
+                    // iOS: 使用Web Share API
+                    const file = new File([blob], `${tablePages[id].name}_${Date.now()}.png`, { type: 'image/png' });
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: tablePages[id].name
+                        });
+                        showToast('分享成功！');
+                    } catch (e) {
+                        if (e.name !== 'AbortError') {
+                            // 分享失败，回退到传统下载
+                            fallbackDownload(canvas);
+                        }
+                    }
+                } else {
+                    // 非iOS: 传统下载
+                    fallbackDownload(canvas);
+                }
+            } catch (e) {
+                showToast('图片生成失败');
+                console.error(e);
+            }
+        }
+
+        function fallbackDownload(canvas) {
+            const link = document.createElement('a');
+            link.download = `数据表_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('图片下载成功！');
+        }
+
+        // 工具管理
+        function addTool() {
+            editingToolId = null;
+            document.getElementById('toolModalTitle').textContent = '添加随机工具';
+            document.getElementById('toolName').value = '';
+            document.getElementById('toolColor').value = '#b71c1c';
+            document.getElementById('toolHeader').value = '';
+            document.getElementById('toolBasePeriod').value = '';
+            document.getElementById('toolBaseDate').value = '';
+            updateColorPresets('toolColor');
+            document.getElementById('toolModal').classList.add('show');
+        }
+
+        function editTool(id) {
+            editingToolId = id;
+            const tool = toolPages[id];
+            document.getElementById('toolModalTitle').textContent = '编辑随机工具';
+            document.getElementById('toolName').value = tool.name;
+            document.getElementById('toolColor').value = tool.color;
+            document.getElementById('toolHeader').value = tool.header;
+            document.getElementById('toolBasePeriod').value = tool.basePeriod;
+            document.getElementById('toolBaseDate').value = tool.baseDate;
+            updateColorPresets('toolColor');
+            document.getElementById('toolModal').classList.add('show');
+        }
+
+        function deleteTool(id) {
+            if (Object.keys(toolPages).length <= 1) {
+                showToast('至少保留一个工具');
+                return;
+            }
+            if (confirm('确定删除这个工具？')) {
+                delete toolPages[id];
+                saveData();
+                if (activeToolId === id) {
+                    const ids = Object.keys(toolPages);
+                    activateTool(ids[0]);
+                }
+                renderTabs();
+            }
+        }
+
+        function closeToolModal() {
+            document.getElementById('toolModal').classList.remove('show');
+        }
+
+        function saveToolModal() {
+            const name = document.getElementById('toolName').value.trim();
+            const color = document.getElementById('toolColor').value;
+            const header = document.getElementById('toolHeader').value.trim();
+            const basePeriod = parseInt(document.getElementById('toolBasePeriod').value) || 0;
+            const baseDate = document.getElementById('toolBaseDate').value;
+
+            if (!name) {
+                showToast('请输入工具名称');
+                return;
+            }
+
+            if (editingToolId) {
+                toolPages[editingToolId].name = name;
+                toolPages[editingToolId].color = color;
+                toolPages[editingToolId].header = header;
+                toolPages[editingToolId].basePeriod = basePeriod;
+                toolPages[editingToolId].baseDate = baseDate;
+            } else {
+                const id = 'tool_' + Date.now();
+                toolPages[id] = {
+                    id,
+                    name,
+                    color,
+                    header,
+                    basePeriod,
+                    baseDate,
+                    count: 6,
+                    result: null
+                };
+                activateTool(id);
+            }
+
+            saveData();
+            closeToolModal();
+            renderTabs();
+            if (activeToolId) {
+                renderToolPage(activeToolId);
+            }
+        }
+
+        // 表格页管理
+        function addTable() {
+            editingTableId = null;
+            document.getElementById('tableModalTitle').textContent = '添加表格页';
+            document.getElementById('tableName').value = '';
+            document.getElementById('tableColor').value = '#2e7d32';
+            document.getElementById('tableDecor').value = '';
+            updateColorPresets('tableColor');
+            document.getElementById('tableModal').classList.add('show');
+        }
+
+        function editTable(id) {
+            editingTableId = id;
+            const table = tablePages[id];
+            document.getElementById('tableModalTitle').textContent = '编辑表格页';
+            document.getElementById('tableName').value = table.name;
+            document.getElementById('tableColor').value = table.color;
+            document.getElementById('tableDecor').value = table.decorUrl || '';
+            updateColorPresets('tableColor');
+            document.getElementById('tableModal').classList.add('show');
+        }
+
+        function deleteTable(id) {
+            if (Object.keys(tablePages).length <= 1) {
+                showToast('至少保留一个表格页');
+                return;
+            }
+            if (confirm('确定删除这个表格页？')) {
+                delete tablePages[id];
+                saveData();
+                if (activeTableId === id) {
+                    const ids = Object.keys(tablePages);
+                    activateTable(ids[0]);
+                }
+                renderTabs();
+            }
+        }
+
+        function closeTableModal() {
+            document.getElementById('tableModal').classList.remove('show');
+        }
+
+        function saveTableModal() {
+            const name = document.getElementById('tableName').value.trim();
+            const color = document.getElementById('tableColor').value;
+            const decorUrl = document.getElementById('tableDecor').value.trim();
+
+            if (!name) {
+                showToast('请输入表格名称');
+                return;
+            }
+
+            if (editingTableId) {
+                tablePages[editingTableId].name = name;
+                tablePages[editingTableId].color = color;
+                tablePages[editingTableId].decorUrl = decorUrl;
+            } else {
+                const id = 'table_' + Date.now();
+                tablePages[id] = {
+                    id,
+                    name,
+                    color,
+                    decorUrl,
+                    records: []
+                };
+                activateTable(id);
+            }
+
+            saveData();
+            closeTableModal();
+            renderTabs();
+            if (activeTableId) {
+                renderTablePage(activeTableId);
+            }
+        }
+
+        // 颜色预设
+        function updateColorPresets(inputId) {
+            const presets = document.querySelectorAll(`#${inputId === 'toolColor' ? 'toolModal' : 'tableModal'} .color-preset`);
+            const currentColor = document.getElementById(inputId).value;
+            presets.forEach(p => {
+                p.classList.toggle('selected', p.dataset.color === currentColor);
+            });
+        }
+
+        // 颜色选择器事件
+        document.getElementById('toolColor').addEventListener('input', () => updateColorPresets('toolColor'));
+        document.getElementById('tableColor').addEventListener('input', () => updateColorPresets('tableColor'));
+
+        document.querySelectorAll('.color-preset').forEach(preset => {
+            preset.addEventListener('click', function() {
+                const modal = this.closest('.modal');
+                const colorInput = modal.querySelector('input[type="color"]');
+                colorInput.value = this.dataset.color;
+                updateColorPresets(colorInput.id);
+            });
+        });
+
+        // 工具函数
+        function lightenColor(color) {
+            const hex = color.replace('#', '');
+            const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + 50);
+            const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + 50);
+            const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + 50);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
