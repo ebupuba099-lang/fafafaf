@@ -17,15 +17,15 @@ jobs:
           python-version: '3.11'
       - name: 执行生成脚本
         env:
-          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: python scripts/generate.py
       - name: 同步数据到仓库
         env:
-          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: d32d11b8ed886ed36b2d2cf57e693e54
         run: |
           mkdir -p data
-          curl -s -H "Authorization: token $GIST_TOKEN" \
+          curl -s -H "Authorization: token $GH_TOKEN" \
             "https://api.github.com/gists/$GIST_ID" > /tmp/gist.json
           python3 -c "
           import json
