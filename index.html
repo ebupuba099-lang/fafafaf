@@ -1616,79 +1616,85 @@
             const currentSeq = latestRec ? latestRec.sequences : null;
             const currentWinning = latestRec ? (latestRec.winning || '') : '';
 
+            // Build winning badge HTML
+            let winningHtml = '';
+            if (currentWinning) {
+                winningHtml = '<div style="text-align:center;margin-bottom:10px;"><span style="background:' + table.color + ';color:#fff;padding:3px 12px;border-radius:12px;font-size:14px;">开奖: ' + currentWinning + '</span></div>';
+            }
+
+            // Build slot machine HTML
+            const positions = ['千', '百', '十', '个', '头尾合'];
+            let slotsHtml = '';
+            for (const pos of positions) {
+                const displayVal = currentSeq && currentSeq[pos] ? currentSeq[pos][currentSeq[pos].length-1].slice(-1) : '-';
+                slotsHtml += '<div class="slot-item">' +
+                    '<div class="slot-label">' + pos + '</div>' +
+                    '<div class="slot-box" id="slot-' + id + '-' + pos + '">' + displayVal + '</div>' +
+                    '</div>';
+            }
+
+            // Build decor image HTML
+            let decorHtml = '';
+            if (table.decorUrl) {
+                decorHtml = '<img src="' + table.decorUrl + '" class="table-decor" onerror="this.style.display=\'none\'">';
+            }
+
             const content = document.getElementById('content');
-            content.innerHTML = `
-                <div class="page active" id="page-${id}">
-                    <div class="card" style="--page-color: ${table.color}">
-                        <!-- 当前期序列展示区 -->
-                        <div style="text-align:center; margin-bottom:10px;">
-                            <span style="font-size:20px; font-weight:bold; color:${table.color};">${table.name}</span>
-                        </div>
-                        <div class="period-display">
-                            <div class="period-label">当前期数</div>
-                            <div class="period-value">${currentPeriod}</div>
-                            <div class="period-date">${new Date().toLocaleDateString('zh-CN')}</div>
-                        </div>
-
-                        ${currentWinning ? \`<div style="text-align:center;margin-bottom:10px;"><span style="background:\${table.color};color:#fff;padding:3px 12px;border-radius:12px;font-size:14px;">开奖: \${currentWinning}</span></div>\` : ''}
-
-                        <div class="slot-machine" id="slots-${id}">
-                            ${['千', '百', '十', '个', '头尾合'].map(pos => \`
-                                <div class="slot-item">
-                                    <div class="slot-label">\${pos}</div>
-                                    <div class="slot-box" id="slot-${id}-\${pos}">\${currentSeq && currentSeq[pos] ? currentSeq[pos][currentSeq[pos].length-1].slice(-1) : '-'}</div>
-                                </div>
-                            \`).join('')}
-                        </div>
-
-                        <div class="controls">
-                            <button class="btn btn-primary" onclick="startGenerateTable('${id}')">开始生成</button>
-                            <button class="btn btn-secondary" onclick="copyTableResult('${id}')">一键复制</button>
-                        </div>
-
-                        <div class="result-area" id="result-${id}">
-                            ${currentSeq ? renderResult(currentSeq) : '<div class="empty-state"><p>点击"开始生成"来生成序列</p></div>'}
-                        </div>
-
-                        <div class="table-toolbar">
-                            <div class="table-actions" style="justify-content:flex-end;">
-                                <button class="btn btn-secondary" onclick="downloadTableImage('${id}')">下载图片</button>
-                                <button class="btn btn-cancel" onclick="clearTableData('${id}')">清空数据</button>
-                            </div>
-                        </div>
-
-                        <!-- 输入区域 -->
-                        <div class="card" style="background: #fafafa; margin-bottom: 15px; border: 1px solid #eee;">
-                            <div class="input-group">
-                                <label>粘贴数据（支持解析递减序列）</label>
-                                <textarea id="paste-${id}" placeholder="粘贴格式：&#10;千 041356798 04135678 ...&#10;百 435621790 ...&#10;..."></textarea>
-                            </div>
-                            <button class="btn btn-primary" onclick="parseAndAdd('${id}')">解析并添加</button>
-                        </div>
-
-
-
-                        <!-- 水印设置 -->
-                        <div class="card" style="background: #fafafa; margin-bottom: 15px; border: 1px solid #eee;">
-                            <div class="input-group">
-                                <label>水印文字（下载图片时添加）</label>
-                                <div class="watermark-input">
-                                    <input type="text" id="watermark-${id}" placeholder="输入水印文字" value="🎰 发财就手统计 🎰">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 表格展示 -->
-                        <div class="data-table-wrapper" id="tableWrapper-${id}" style="position: relative;">
-                            ${renderTableData(table)}
-                            ${table.decorUrl ? `<img src="${table.decorUrl}" class="table-decor" onerror="this.style.display='none'">` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
+            content.innerHTML =
+                '<div class="page active" id="page-' + id + '">' +
+                    '<div class="card" style="--page-color: ' + table.color + '">' +
+                        '<!-- 当前期序列展示区 -->' +
+                        '<div style="text-align:center; margin-bottom:10px;">' +
+                            '<span style="font-size:20px; font-weight:bold; color:' + table.color + ';">' + table.name + '</span>' +
+                        '</div>' +
+                        '<div class="period-display">' +
+                            '<div class="period-label">当前期数</div>' +
+                            '<div class="period-value">' + currentPeriod + '</div>' +
+                            '<div class="period-date">' + new Date().toLocaleDateString('zh-CN') + '</div>' +
+                        '</div>' +
+                        winningHtml +
+                        '<div class="slot-machine" id="slots-' + id + '">' +
+                            slotsHtml +
+                        '</div>' +
+                        '<div class="controls">' +
+                            '<button class="btn btn-primary" onclick="startGenerateTable(\'' + id + '\')">开始生成</button>' +
+                            '<button class="btn btn-secondary" onclick="copyTableResult(\'' + id + '\')">一键复制</button>' +
+                        '</div>' +
+                        '<div class="result-area" id="result-' + id + '">' +
+                            (currentSeq ? renderResult(currentSeq) : '<div class="empty-state"><p>点击"开始生成"来生成序列</p></div>') +
+                        '</div>' +
+                        '<div class="table-toolbar">' +
+                            '<div class="table-actions" style="justify-content:flex-end;">' +
+                                '<button class="btn btn-secondary" onclick="downloadTableImage(\'' + id + '\')">下载图片</button>' +
+                                '<button class="btn btn-cancel" onclick="clearTableData(\'' + id + '\')">清空数据</button>' +
+                            '</div>' +
+                        '</div>' +
+                        '<!-- 输入区域 -->' +
+                        '<div class="card" style="background: #fafafa; margin-bottom: 15px; border: 1px solid #eee;">' +
+                            '<div class="input-group">' +
+                                '<label>粘贴数据（支持解析递减序列）</label>' +
+                                '<textarea id="paste-' + id + '" placeholder="粘贴格式：&#10;千 041356798 04135678 ...&#10;百 435621790 ...&#10;..."></textarea>' +
+                            '</div>' +
+                            '<button class="btn btn-primary" onclick="parseAndAdd(\'' + id + '\')">解析并添加</button>' +
+                        '</div>' +
+                        '<!-- 水印设置 -->' +
+                        '<div class="card" style="background: #fafafa; margin-bottom: 15px; border: 1px solid #eee;">' +
+                            '<div class="input-group">' +
+                                '<label>水印文字（下载图片时添加）</label>' +
+                                '<div class="watermark-input">' +
+                                    '<input type="text" id="watermark-' + id + '" placeholder="输入水印文字" value="🎰 发财就手统计 🎰">' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<!-- 表格展示 -->' +
+                        '<div class="data-table-wrapper" id="tableWrapper-' + id + '" style="position: relative;">' +
+                            renderTableData(table) +
+                            decorHtml +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
             } catch(e) { console.error('renderTablePage错误:', e); }
         }
-
         function renderTableData(table) {
             if (table.records.length === 0) {
                 return '<div class="empty-state"><p>暂无数据，请粘贴数据后解析</p></div>';
