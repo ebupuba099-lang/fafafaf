@@ -76,24 +76,26 @@ def main():
     
     data = load_data()
     
+    updated = 0
     for table_id, table in data.get('tablePages', {}).items():
         records = table.get('records', [])
-        current_period = 0
-        if records:
-            current_period = records[-1].get('period', 0) + 1
+        if not records:
+            continue
         
-        new_record = {
-            'period': current_period,
-            'winning': winning4,
-            'results': None
-        }
-        records.append(new_record)
-        table['records'] = records
+        # 找到第一条winning为空的记录，填入开奖号
+        for rec in records:
+            if rec.get('winning', '') == '' or rec.get('winning') is None:
+                rec['winning'] = winning4
+                updated += 1
+                print(f"  填入 {table.get('name','?')} 期{rec['period']} 开奖号={winning4}")
+                break  # 每个表格只填一条
     
-    data['lastUpdate'] = int(datetime.now().timestamp() * 1000)
-    
-    save_data(data)
-    print(f"Lottery results updated: {winning4}")
+    if updated > 0:
+        data['lastUpdate'] = int(datetime.now().timestamp() * 1000)
+        save_data(data)
+        print(f"Lottery results updated: {winning4}, {updated} tables filled")
+    else:
+        print("No empty winning records found, nothing to update")
 
 if __name__ == '__main__':
     main()
