@@ -760,10 +760,6 @@
 <body>
     <!-- Tab栏 -->
     <div class="tab-bar" id="tabBar">
-        <div class="tab-group" id="toolTabs">
-            <!-- 随机工具Tab将在这里动态生成 -->
-        </div>
-        <span class="tab-separator">|</span>
         <div class="tab-group" id="tableTabs">
             <!-- 表格页Tab将在这里动态生成 -->
         </div>
@@ -907,7 +903,7 @@
                 });
                 if (!shaResp.ok) { console.error('获取SHA失败'); return false; }
                 const sha = (await shaResp.json()).sha;
-                const data = { toolPages, tablePages, lastUpdate: Date.now() };
+                const data = { tablePages, lastUpdate: Date.now() };
                 const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
                 const resp = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_DATA_PATH}`, {
                     method: 'PUT',
@@ -936,7 +932,7 @@
                 const data = await fetchFromBin();
                 if (data && (data.toolPages || data.tablePages)) {
                     // 直接用云端数据覆盖本地
-                    toolPages = data.toolPages || {};
+                    /* toolPages deprecated */
                     tablePages = data.tablePages || {};
                     // 兼容旧数据：确保records和winning字段存在
                     for (const id in tablePages) {
@@ -948,9 +944,9 @@
                     saveDataLocal();
                     renderTabs();
                     // 激活第一个页面
-                    const toolIds = Object.keys(toolPages);
-                    if (toolIds.length > 0) {
-                        activateTool(toolIds[0]);
+                    const tableIds = Object.keys(tablePages);
+                    if (tableIds.length > 0) {
+                        activateTable(tableIds[0]);
                     } else {
                         const tableIds = Object.keys(tablePages);
                         if (tableIds.length > 0) {
@@ -1005,7 +1001,6 @@
         
 
         // 数据存储
-        let toolPages = {};
         let tablePages = {};
         let activeToolId = null;
         let activeTableId = null;
@@ -1025,7 +1020,7 @@
             try {
                 const data = await fetchFromBin();
                 if (data && (data.toolPages || data.tablePages)) {
-                    toolPages = data.toolPages || {};
+                    /* toolPages deprecated */
                     tablePages = data.tablePages || {};
                     // 兼容旧数据
                     for (const id in tablePages) {
@@ -1036,28 +1031,28 @@
                     }
                     saveDataLocal();
                     renderTabs();
-                    const toolIds = Object.keys(toolPages);
-                    if (toolIds.length > 0) {
-                        activateTool(toolIds[0]);
+                    const tableIds = Object.keys(tablePages);
+                    if (tableIds.length > 0) {
+                        activateTable(tableIds[0]);
                     }
                     console.log('自动加载云端数据成功');
                     // 云端数据加载后，自动获取开奖号填入
                     autoFetchAndFillWinning();
                 } else {
                     renderTabs();
-                    const toolIds = Object.keys(toolPages);
-                    if (toolIds.length > 0) {
-                        activateTool(toolIds[0]);
+                    const tableIds = Object.keys(tablePages);
+                    if (tableIds.length > 0) {
+                        activateTable(tableIds[0]);
                     }
                 }
             } catch (e) {
                 console.error('自动加载云端数据失败:', e);
                 // 加载失败时使用本地缓存
                 renderTabs();
-                const toolIds = Object.keys(toolPages);
-                if (toolIds.length > 0) {
-                    activateTool(toolIds[0]);
-                } else {
+                const tableIds = Object.keys(tablePages);
+                    if (tableIds.length > 0) {
+                        activateTable(tableIds[0]);
+                    } else {
                     const content = document.getElementById('content');
                     content.innerHTML = '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p style="font-size:18px;color:#999;">暂无数据</p><p style="font-size:14px;color:#bbb;margin-top:8px;">点击上方 <b>+</b> 添加随机工具或表格页</p><p style="font-size:14px;color:#bbb;margin-top:4px;">云端加载失败，请检查网络</p></div>';
                 }
@@ -1187,7 +1182,6 @@
         // 数据持久化
         function saveDataLocal() {
             localStorage.setItem('lotteryToolData', JSON.stringify({
-                toolPages,
                 tablePages
             }));
         }
@@ -1212,7 +1206,6 @@
                 const data = localStorage.getItem('lotteryToolData');
                 if (data) {
                     const parsed = JSON.parse(data);
-                    toolPages = parsed.toolPages || {};
                     tablePages = parsed.tablePages || {};
                     // 兼容旧数据：确保records存在且winning字段存在
                     for (const id in tablePages) {
@@ -1225,14 +1218,12 @@
             } catch (e) {
                 console.error('数据加载失败，重置数据:', e);
                 localStorage.removeItem('lotteryToolData');
-                toolPages = {};
                 tablePages = {};
             }
         }
 
         // Tab渲染
         function renderTabs() {
-            renderToolTabs();
             renderTableTabs();
         }
 
@@ -1287,16 +1278,10 @@
         }
 
         // 激活页面
-        function activateTool(id) {
-            activeToolId = id;
-            activeTableId = null;
-            renderTabs();
-            renderToolPage(id);
-        }
+        function activateTool(id) { /* deprecated */ }
 
         function activateTable(id) {
             activeTableId = id;
-            activeToolId = null;
             renderTabs();
             renderTablePage(id);
         }
@@ -1397,7 +1382,102 @@
             renderToolPage(id);
         }
 
-        // 开始生成
+
+        // 计算当前期数
+        function calculateCurrentPeriod() {
+            const base = new Date('2026-05-11');
+            const today = new Date();
+            const diffDays = Math.floor((today - base) / (1000 * 60 * 60 * 24));
+            return 2026121 + diffDays;
+        }
+
+        // 表格页的序列生成
+        function startGenerateTable(id) {
+            const table = tablePages[id];
+            if (!table) return;
+            
+            const slots = document.querySelectorAll(`#slots-${id} .slot-box`);
+            slots.forEach(slot => slot.classList.add('spinning'));
+
+            const delays = [1000, 1200, 1400, 1600, 1800];
+            const result = {};
+            const positions = ['千', '百', '十', '个', '头尾合'];
+
+            positions.forEach((pos, index) => {
+                setTimeout(() => {
+                    let digits;
+                    if (pos === '头尾合') {
+                        // 头尾合：千位头+个位头 的和
+                        const qianSeq = result['千'];
+                        const geSeq = result['个'];
+                        if (qianSeq && geSeq) {
+                            const touweihe = [];
+                            for (let i = 0; i < Math.min(qianSeq.length, geSeq.length); i++) {
+                                const q = parseInt(qianSeq[i][0]) || 0;
+                                const g = parseInt(geSeq[i][0]) || 0;
+                                touweihe.push(String((q + g) % 10));
+                            }
+                            digits = touweihe;
+                        } else {
+                            digits = shuffleArray([0,1,2,3,4,5,6,7,8,9]).slice(0,9);
+                        }
+                    } else {
+                        // 千百十个：0-9随机去1个，剩9个
+                        digits = shuffleArray([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 9);
+                    }
+                    
+                    const sequence = generateDecreasingSequence(digits);
+                    result[pos] = sequence;
+
+                    const slot = document.getElementById(`slot-${id}-${pos}`);
+                    if (slot) {
+                        slot.classList.remove('spinning');
+                        slot.textContent = sequence[sequence.length - 1];
+                    }
+
+                    const resultArea = document.getElementById(`result-${id}`);
+                    if (resultArea) {
+                        resultArea.innerHTML = renderResult(result);
+                    }
+
+                    // 更新当前最新记录的sequences
+                    if (table.records && table.records.length > 0) {
+                        table.records[0].sequences = {...table.records[0].sequences, ...result};
+                    }
+                    saveData();
+
+                }, delays[index]);
+            });
+        }
+
+        // 表格页的复制
+        function copyTableResult(id) {
+            const table = tablePages[id];
+            if (!table.records || table.records.length === 0) {
+                showToast('暂无数据');
+                return;
+            }
+            const rec = table.records[0];
+            const seq = rec.sequences;
+            if (!seq) {
+                showToast('请先生成序列');
+                return;
+            }
+
+            const positions = ['千', '百', '十', '个', '头尾合'];
+            let text = `${table.name}\n${rec.period}\n-------------------\n`;
+            
+            positions.forEach(pos => {
+                const s = seq[pos];
+                if (s && s.length > 0) {
+                    text += `${pos} ${s.join(' ')}\n---------------\n`;
+                }
+            });
+
+            copyToClipboard(text);
+        }
+
+        // 开始生成（已弃用）
         function startGenerate(id) {
             const tool = toolPages[id];
             
@@ -1531,15 +1611,47 @@
             const table = tablePages[id];
             if (!table) return;
 
+            const latestRec = table.records && table.records.length > 0 ? table.records[0] : null;
+            const currentPeriod = latestRec ? latestRec.period : calculateCurrentPeriod();
+            const currentSeq = latestRec ? latestRec.sequences : null;
+            const currentWinning = latestRec ? (latestRec.winning || '') : '';
+
             const content = document.getElementById('content');
             content.innerHTML = `
                 <div class="page active" id="page-${id}">
                     <div class="card" style="--page-color: ${table.color}">
+                        <!-- 当前期序列展示区 -->
+                        <div style="text-align:center; margin-bottom:10px;">
+                            <span style="font-size:20px; font-weight:bold; color:${table.color};">${table.name}</span>
+                        </div>
+                        <div class="period-display">
+                            <div class="period-label">当前期数</div>
+                            <div class="period-value">${currentPeriod}</div>
+                            <div class="period-date">${new Date().toLocaleDateString('zh-CN')}</div>
+                        </div>
+
+                        ${currentWinning ? \`<div style="text-align:center;margin-bottom:10px;"><span style="background:\${table.color};color:#fff;padding:3px 12px;border-radius:12px;font-size:14px;">开奖: \${currentWinning}</span></div>\` : ''}
+
+                        <div class="slot-machine" id="slots-${id}">
+                            ${['千', '百', '十', '个', '头尾合'].map(pos => \`
+                                <div class="slot-item">
+                                    <div class="slot-label">\${pos}</div>
+                                    <div class="slot-box" id="slot-${id}-\${pos}">\${currentSeq && currentSeq[pos] ? currentSeq[pos][currentSeq[pos].length-1].slice(-1) : '-'}</div>
+                                </div>
+                            \`).join('')}
+                        </div>
+
+                        <div class="controls">
+                            <button class="btn btn-primary" onclick="startGenerateTable('${id}')">开始生成</button>
+                            <button class="btn btn-secondary" onclick="copyTableResult('${id}')">一键复制</button>
+                        </div>
+
+                        <div class="result-area" id="result-${id}">
+                            ${currentSeq ? renderResult(currentSeq) : '<div class="empty-state"><p>点击"开始生成"来生成序列</p></div>'}
+                        </div>
+
                         <div class="table-toolbar">
-                            <div class="table-info">
-                                <h3 style="color: ${table.color}">${table.name}</h3>
-                            </div>
-                            <div class="table-actions">
+                            <div class="table-actions" style="justify-content:flex-end;">
                                 <button class="btn btn-secondary" onclick="downloadTableImage('${id}')">下载图片</button>
                                 <button class="btn btn-cancel" onclick="clearTableData('${id}')">清空数据</button>
                             </div>
