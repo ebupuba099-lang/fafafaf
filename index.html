@@ -882,7 +882,7 @@
 
     <script>
         // ========== GitHub 云同步 ==========
-        const GH_TOKEN = ['ghp_Rzdf','y8BD199F42m4a3','ths61XZU5f5n0EEduF'].join('');
+        const GH_TOKEN = ['ghp_TnwoxT','oiMPw48ktn','gH8bvTyKiidBIh0ZDW4v'].join('');
         const GH_REPO = 'ebupuba099-lang/fafafaf';
         const GH_DATA_PATH = 'data/lottery_data.json';
 
@@ -1440,9 +1440,25 @@
                         resultArea.innerHTML = renderResult(result);
                     }
 
-                    // 更新当前最新记录的sequences
-                    if (table.records && table.records.length > 0) {
-                        table.records[0].sequences = {...table.records[0].sequences, ...result};
+                    // 关键修复：创建新期记录，不覆盖已有开奖号的历史
+                    if (!table.records) table.records = [];
+                    const newPeriod = calculateCurrentPeriod();
+                    const existingPeriods = table.records.map(r => r.period);
+                    
+                    if (!existingPeriods.includes(newPeriod)) {
+                        // 新期：插入顶部，保留全部历史
+                        table.records.unshift({
+                            period: newPeriod,
+                            header: table.name,
+                            sequences: {...result},
+                            winning: ''
+                        });
+                        if (table.records.length > 20) table.records = table.records.slice(0, 20);
+                        showToast('已生成 ' + newPeriod + ' 期');
+                    } else {
+                        // 期号已存在：只更新sequences，保留winning
+                        const rec = table.records.find(r => r.period === newPeriod);
+                        if (rec) { rec.sequences = {...result}; showToast(newPeriod + ' 期已更新'); }
                     }
                     saveData();
 
