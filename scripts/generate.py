@@ -5,7 +5,8 @@ import os
 import random
 import base64
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 GH_TOKEN = os.environ.get('GH_TOKEN', '')
 REPO = 'ebupuba099-lang/fafafaf'
@@ -64,7 +65,7 @@ def generate_touweihe(seq_qian, seq_ge):
 def main():
     data = load_data()
     
-    today = datetime.now()
+    today = datetime.now(ZoneInfo("Asia/Shanghai"))
     today_str = today.strftime('%Y-%m-%d')
     base_date = datetime(2026, 5, 11)
     days_diff = (today - base_date).days
@@ -110,3 +111,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
