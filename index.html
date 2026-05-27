@@ -1950,17 +1950,24 @@
 
             const table = tablePages[id];
             if (!table) { showToast('数据表不存在'); return; }
-            table.records.push({
-                period: parsed.period,
-                header: parsed.header || '',
-                sequences: parsed.sequences,
-                winning: ''
-            });
+            // 检查是否已有同期记录，有则更新，无则添加
+            const existingIdx = table.records.findIndex(r => r.period === parsed.period);
+            if (existingIdx >= 0) {
+                table.records[existingIdx].sequences = parsed.sequences;
+                table.records[existingIdx].header = parsed.header || table.records[existingIdx].header;
+                showToast('已更新 ' + parsed.period + ' 期数据');
+            } else {
+                table.records.push({
+                    period: parsed.period,
+                    header: parsed.header || '',
+                    sequences: parsed.sequences,
+                    winning: ''
+                });
+                // 按期数排序
+                table.records.sort((a, b) => b.period - a.period);
+            }
 
-            // 按期数排序
-            table.records.sort((a, b) => b.period - a.period);
-
-            // 最多保留30条，超出顶掉最旧的
+            // 最多保留30条
             if (table.records.length > 30) {
                 table.records = table.records.slice(0, 30);
             }
