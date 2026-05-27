@@ -1628,7 +1628,7 @@
             if (!table) return;
 
             const latestRec = table.records && table.records.length > 0 ? table.records[0] : null;
-            const currentPeriod = latestRec ? latestRec.period : calculateCurrentPeriod();
+            const currentPeriod = calculateCurrentPeriod();
             const currentSeq = latestRec ? latestRec.sequences : null;
             const currentWinning = latestRec ? (latestRec.winning || '') : '';
 
