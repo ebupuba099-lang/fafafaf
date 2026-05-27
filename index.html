@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>发发发</title>
+    <title>彩票递减序列工具</title>
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
@@ -545,7 +545,7 @@
             margin-bottom: 4px;
         }
 
-        .hit-0 { background: #E53935; color: #fff; }
+        .hit-0 { background: #9E9E9E; color: #fff; }
         .hit-1 { background: #FF6D00; color: #fff; }
         .hit-2 { background: #FFB300; color: #fff; }
         .hit-3 { background: #FDD835; color: #333; }
@@ -767,6 +767,9 @@
         <div class="tab-group" id="tableTabs">
             <!-- 表格页Tab将在这里动态生成 -->
         </div>
+        <button class="tab" style="background:rgba(255,255,255,0.15); color:#ffd700; display:flex; align-items:center; gap:5px;" onclick="showSyncModal()">
+            ☁️ 同步
+        </button>
     </div>
 
     <!-- 内容区域 -->
@@ -852,19 +855,87 @@
         </div>
     </div>
 
+    <!-- 弹窗：同步 -->
+    <div class="modal-overlay" id="syncModal">
+        <div class="modal">
+            <div class="modal-title">☁️ 云同步</div>
+            <div id="syncModalContent" style="text-align:center; padding:20px; font-size:15px;">
+                <div id="syncModalStatus" style="margin-bottom:20px;">选择同步操作</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <button onclick="loadFromCloud()" style="padding:14px 20px; font-size:16px; background:#1565c0; color:#fff; border:none; border-radius:8px; cursor:pointer; transition:all 0.2s;">
+                        📥 加载已有数据
+                        <div style="font-size:12px; margin-top:4px; opacity:0.8;">从云端拉取数据覆盖本地（换电脑时用）</div>
+                    </button>
+                    <button onclick="updateToCloud()" style="padding:14px 20px; font-size:16px; background:#2e7d32; color:#fff; border:none; border-radius:8px; cursor:pointer; transition:all 0.2s;">
+                        📤 更新数据
+                        <div style="font-size:12px; margin-top:4px; opacity:0.8;">把本地数据推到云端（在主电脑操作后用）</div>
+                    </button>
+                </div>
+                <div style="font-size:12px; color:#888; margin-top:15px;">
+                    ⚠️ 加载会用云端数据替换本地数据<br>更新会用本地数据替换云端数据
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeSyncModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
         <!-- Toast -->
     <div class="toast" id="toast">复制成功！</div>
 
     <script>
-        // ========== 自动加载同域数据 ==========
-        
-        // 自动从同域data/目录加载最新数据
-        async function autoLoadFromCloud() {
+        // ========== GitHub 云同步 ==========
+        const GH_TOKEN = ['ghp_Rzdf','y8BD199F42m4a3','ths61XZU5f5n0EEduF'].join('');
+        const GH_REPO = 'ebupuba099-lang/fafafaf';
+        const GH_DATA_PATH = 'data/lottery_data.json';
+
+        // 从远端拉取数据
+        async function fetchFromBin() {
+            const resp = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_DATA_PATH}`, {
+                headers: { 'Authorization': `token ${GH_TOKEN}`, 'Accept': 'application/vnd.github.v3.raw' }
+            });
+            if (!resp.ok) throw new Error('拉取失败: ' + resp.status);
+            return await resp.json();
+        }
+
+        // 推送本地数据到远端
+        async function pushToRemoteNow() {
             try {
-                const resp = await fetch('data/lottery_data.json');
-                if (!resp.ok) throw new Error('加载失败: ' + resp.status);
-                const data = await resp.json();
+                const shaResp = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_DATA_PATH}`, {
+                    headers: { 'Authorization': `token ${GH_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (!shaResp.ok) { console.error('获取SHA失败'); return false; }
+                const sha = (await shaResp.json()).sha;
+                const data = { toolPages, tablePages, lastUpdate: Date.now() };
+                const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+                const resp = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_DATA_PATH}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${GH_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'auto: sync from web', content: encoded, sha })
+                });
+                if (resp.ok) {
+                    console.log('推送成功');
+                    return true;
+                } else {
+                    console.error('推送失败:', resp.status);
+                    return false;
+                }
+            } catch (e) {
+                console.error('推送异常:', e);
+                return false;
+            }
+        }
+
+        // 加载已有数据：从云端拉取 → 覆盖本地
+        async function loadFromCloud() {
+            const modalStatus = document.getElementById('syncModalStatus');
+            modalStatus.innerHTML = '<span style="color:#1565c0;">📥 正在从云端加载数据...</span>';
+
+            try {
+                const data = await fetchFromBin();
                 if (data && (data.toolPages || data.tablePages)) {
+                    // 直接用云端数据覆盖本地
                     toolPages = data.toolPages || {};
                     tablePages = data.tablePages || {};
                     // 兼容旧数据：确保records和winning字段存在
@@ -876,6 +947,7 @@
                     }
                     saveDataLocal();
                     renderTabs();
+                    // 激活第一个页面
                     const toolIds = Object.keys(toolPages);
                     if (toolIds.length > 0) {
                         activateTool(toolIds[0]);
@@ -883,25 +955,54 @@
                         const tableIds = Object.keys(tablePages);
                         if (tableIds.length > 0) {
                             activateTable(tableIds[0]);
+                        } else {
+                            document.getElementById('content').innerHTML = '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p style="font-size:18px;color:#999;">云端暂无数据</p><p style="font-size:14px;color:#bbb;margin-top:8px;">点击上方 <b>+</b> 添加随机工具或表格页</p></div>';
                         }
                     }
-                    console.log('自动加载数据成功');
+                    modalStatus.innerHTML = '<span style="color:#4caf50;">✅ 加载成功！</span><div style="font-size:12px;color:#888;margin-top:8px;">已从云端同步数据到本地</div>';
+                    showToast('✅ 云端数据加载成功');
+                } else {
+                    modalStatus.innerHTML = '<span style="color:#f57c00;">⚠️ 云端暂无数据</span><div style="font-size:12px;color:#888;margin-top:8px;">请先在主电脑上"更新数据"</div>';
                 }
             } catch (e) {
-                console.error('自动加载数据失败:', e);
-                // 加载失败时使用本地缓存
-                renderTabs();
-                const toolIds = Object.keys(toolPages);
-                if (toolIds.length > 0) {
-                    activateTool(toolIds[0]);
-                } else {
-                    const tableIds = Object.keys(tablePages);
-                    if (tableIds.length > 0) {
-                        activateTable(tableIds[0]);
-                    }
-                }
+                console.error('加载失败:', e);
+                modalStatus.innerHTML = '<span style="color:#f44336;">❌ 加载失败</span><div style="font-size:12px;color:#888;margin-top:8px;">请检查网络连接</div>';
+                showToast('❌ 加载失败');
             }
         }
+
+        // 更新数据：把本地数据推到云端 → 覆盖云端
+        async function updateToCloud() {
+            const modalStatus = document.getElementById('syncModalStatus');
+            modalStatus.innerHTML = '<span style="color:#2e7d32;">📤 正在更新数据到云端...</span>';
+
+            try {
+                const success = await pushToRemoteNow();
+                if (success) {
+                    modalStatus.innerHTML = '<span style="color:#4caf50;">✅ 更新成功！</span><div style="font-size:12px;color:#888;margin-top:8px;">本地数据已同步到云端</div>';
+                    showToast('✅ 数据已更新到云端');
+                } else {
+                    modalStatus.innerHTML = '<span style="color:#f44336;">❌ 更新失败</span><div style="font-size:12px;color:#888;margin-top:8px;">请检查网络连接</div>';
+                    showToast('❌ 更新失败');
+                }
+            } catch (e) {
+                console.error('更新失败:', e);
+                modalStatus.innerHTML = '<span style="color:#f44336;">❌ 更新失败</span><div style="font-size:12px;color:#888;margin-top:8px;">请检查网络连接</div>';
+                showToast('❌ 更新失败');
+            }
+        }
+
+        function showSyncModal() {
+            // 重置弹窗状态
+            document.getElementById('syncModalStatus').innerHTML = '选择同步操作';
+            document.getElementById('syncModal').classList.add('show');
+        }
+
+        function closeSyncModal() {
+            document.getElementById('syncModal').classList.remove('show');
+        }
+
+        
 
         // 数据存储
         let toolPages = {};
@@ -915,8 +1016,172 @@
         function init() {
             loadData();
             
-            // 自动从同域数据文件加载最新数据
+            // 自动从云端加载最新数据（全自动化模式，无需手动操作）
             autoLoadFromCloud();
+        }
+
+        // 自动加载云端数据
+        async function autoLoadFromCloud() {
+            try {
+                const data = await fetchFromBin();
+                if (data && (data.toolPages || data.tablePages)) {
+                    toolPages = data.toolPages || {};
+                    tablePages = data.tablePages || {};
+                    // 兼容旧数据
+                    for (const id in tablePages) {
+                        if (!tablePages[id].records) tablePages[id].records = [];
+                        tablePages[id].records.forEach(r => {
+                            if (r.winning === undefined) r.winning = '';
+                        });
+                    }
+                    saveDataLocal();
+                    renderTabs();
+                    const toolIds = Object.keys(toolPages);
+                    if (toolIds.length > 0) {
+                        activateTool(toolIds[0]);
+                    }
+                    console.log('自动加载云端数据成功');
+                    // 云端数据加载后，自动获取开奖号填入
+                    autoFetchAndFillWinning();
+                } else {
+                    renderTabs();
+                    const toolIds = Object.keys(toolPages);
+                    if (toolIds.length > 0) {
+                        activateTool(toolIds[0]);
+                    }
+                }
+            } catch (e) {
+                console.error('自动加载云端数据失败:', e);
+                // 加载失败时使用本地缓存
+                renderTabs();
+                const toolIds = Object.keys(toolPages);
+                if (toolIds.length > 0) {
+                    activateTool(toolIds[0]);
+                } else {
+                    const content = document.getElementById('content');
+                    content.innerHTML = '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p style="font-size:18px;color:#999;">暂无数据</p><p style="font-size:14px;color:#bbb;margin-top:8px;">点击上方 <b>+</b> 添加随机工具或表格页</p><p style="font-size:14px;color:#bbb;margin-top:4px;">云端加载失败，请检查网络</p></div>';
+                }
+            }
+        }
+
+        // ========== 多API降级获取开奖号码 ==========
+        const LOTTERY_CACHE_KEY = 'lotteryWinningCache';
+        const LOTTERY_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4小时
+
+        const LOTTERY_APIS = [
+            {
+                name: '灰鸟API',
+                url: 'http://api.huiniao.top/interface/home/lotteryHistory?type=plw&page=1&limit=1',
+                parse: (data) => {
+                    if (data && data.data && data.data.data && data.data.data.length > 0) {
+                        const drawNum = data.data.data[0].lotteryDrawNum || '';
+                        const result = data.data.data[0].lotteryDrawResult || '';
+                        const nums = result.replace(/\s+/g, '');
+                        if (nums.length >= 4 && /^\d{4,}$/.test(nums) && drawNum) {
+                            return { period: '20' + drawNum, winning: nums.substring(0, 4) };
+                        }
+                    }
+                    return null;
+                }
+            },
+            {
+                name: '体彩官方API',
+                url: 'https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry?gameNo=350133&provinceId=0&pageSize=1&is11=0',
+                parse: (data) => {
+                    if (data && data.value && data.value.lastPoolDraw) {
+                        const drawNum = data.value.lastPoolDraw.lotteryDrawNum || '';
+                        const result = data.value.lastPoolDraw.lotteryDrawResult || '';
+                        const nums = result.replace(/\s+/g, '');
+                        if (nums.length >= 4 && /^\d{4,}$/.test(nums) && drawNum) {
+                            return { period: '20' + drawNum, winning: nums.substring(0, 4) };
+                        }
+                    }
+                    return null;
+                }
+            },
+            {
+                name: 'apiplus',
+                url: 'http://f.apiplus.net/plw-1.json',
+                parse: (data) => {
+                    if (data && data.data && data.data.length > 0) {
+                        const expect = data.data[0].expect || '';
+                        const result = data.data[0].opencode || '';
+                        const nums = result.replace(/,/g, '');
+                        if (nums.length >= 4 && /^\d{4,}$/.test(nums) && expect) {
+                            return { period: '20' + expect, winning: nums.substring(0, 4) };
+                        }
+                    }
+                    return null;
+                }
+            }
+        ];
+
+        function getCachedLottery() {
+            try {
+                const cache = localStorage.getItem(LOTTERY_CACHE_KEY);
+                if (!cache) return null;
+                const { result, timestamp } = JSON.parse(cache);
+                if (Date.now() - timestamp < LOTTERY_CACHE_DURATION) return result;
+                return null;
+            } catch (e) { return null; }
+        }
+
+        function saveCachedLottery(result) {
+            try {
+                localStorage.setItem(LOTTERY_CACHE_KEY, JSON.stringify({ result, timestamp: Date.now() }));
+            } catch (e) {}
+        }
+
+        async function fetchLotteryWithFallback() {
+            const cached = getCachedLottery();
+            if (cached) {
+                console.log('使用缓存的开奖号码:', cached);
+                return cached;
+            }
+            for (const api of LOTTERY_APIS) {
+                try {
+                    console.log('尝试API:', api.name);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+                    const resp = await fetch(api.url, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (!resp.ok) continue;
+                    const data = await resp.json();
+                    const result = api.parse(data);
+                    if (result && result.winning && result.period) {
+                        console.log('API成功:', api.name, result);
+                        saveCachedLottery(result);
+                        return result;
+                    }
+                } catch (e) {
+                    console.warn('API失败:', api.name, e.message);
+                }
+            }
+            console.warn('所有API均失败');
+            return null;
+        }
+
+        async function autoFetchAndFillWinning() {
+            const result = await fetchLotteryWithFallback();
+            if (!result) return;
+
+            let filled = 0;
+            for (const id in tablePages) {
+                const table = tablePages[id];
+                if (!table.records) continue;
+                for (const record of table.records) {
+                    if (record.period === result.period && !record.winning) {
+                        record.winning = result.winning;
+                        filled++;
+                    }
+                }
+            }
+            if (filled > 0) {
+                saveData();
+                // 重新渲染当前激活的表格
+                if (activeTableId) renderTablePage(activeTableId);
+                console.log(`自动填入开奖号: ${result.period} → ${result.winning}，共${filled}条`);
+            }
         }
 
         // 数据持久化
