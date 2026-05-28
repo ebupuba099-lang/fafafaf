@@ -46,21 +46,9 @@ def generate_decreasing_sequence():
         sequences.append(''.join(str(d) for d in current))
     return sequences
 
-def generate_touweihe(seq_qian, seq_ge):
-    """头尾合：千位头+个位头 的和"""
-    touweihe = []
-    for i in range(min(len(seq_qian), len(seq_ge))):
-        q = int(seq_qian[i][0]) if seq_qian[i] else 0
-        g = int(seq_ge[i][0]) if seq_ge[i] else 0
-        touweihe.append(str((q + g) % 10))
-    full = ''.join(touweihe)
-    seqs = [full]
-    current = list(full)
-    while len(current) > 1:
-        idx = random.randint(0, len(current) - 1)
-        current.pop(idx)
-        seqs.append(''.join(current))
-    return seqs
+def generate_touweihe():
+    """头尾合：独立随机递减序列，和千百十个一样"""
+    return generate_decreasing_sequence()
 
 def main():
     data = load_data()
@@ -85,7 +73,7 @@ def main():
             bai = generate_decreasing_sequence()
             shi = generate_decreasing_sequence()
             ge = generate_decreasing_sequence()
-            touweihe = generate_touweihe(qian, ge)
+            touweihe = generate_touweihe()
             
             new_rec = {
                 'period': today_period,
