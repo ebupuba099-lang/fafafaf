@@ -1407,20 +1407,8 @@
                 setTimeout(() => {
                     let digits;
                     if (pos === '头尾合') {
-                        // 头尾合：千位头+个位头 的和
-                        const qianSeq = result['千'];
-                        const geSeq = result['个'];
-                        if (qianSeq && geSeq) {
-                            const touweihe = [];
-                            for (let i = 0; i < Math.min(qianSeq.length, geSeq.length); i++) {
-                                const q = parseInt(qianSeq[i][0]) || 0;
-                                const g = parseInt(geSeq[i][0]) || 0;
-                                touweihe.push(String((q + g) % 10));
-                            }
-                            digits = touweihe;
-                        } else {
-                            digits = shuffleArray([0,1,2,3,4,5,6,7,8,9]).slice(0,9);
-                        }
+                        // 头尾合：独立随机递减序列，和千百十个一样
+                        digits = shuffleArray([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 9);
                     } else {
                         // 千百十个：0-9随机去1个，剩9个
                         digits = shuffleArray([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 9);
