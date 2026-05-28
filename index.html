@@ -1951,7 +1951,7 @@
             const table = tablePages[id];
             if (!table) { showToast('数据表不存在'); return; }
             // 检查是否已有同期记录，有则更新，无则添加
-            const existingIdx = table.records.findIndex(r => r.period === parsed.period);
+            const existingIdx = table.records.findIndex(r => r.period === Number(parsed.period));
             if (existingIdx >= 0) {
                 table.records[existingIdx].sequences = parsed.sequences;
                 table.records[existingIdx].header = parsed.header || table.records[existingIdx].header;
