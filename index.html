@@ -1681,6 +1681,16 @@
                             '</div>' +
                             '<button class="btn btn-primary" onclick="parseAndAdd(\'' + id + '\')">解析并添加</button>' +
                         '</div>' +
+                        '<!-- 水印设置 -->' +
+                        '<div class="card" style="background: #fafafa; margin-bottom: 15px; border: 1px solid #eee;">' +
+                            '<div class="input-group">' +
+                                '<label>水印文字（下载图片时添加）</label>' +
+                                '<div class="watermark-input">' +
+                                    '<input type="text" id="watermark-' + id + '" placeholder="输入水印文字" value="🎰 发财就手统计 🎰">' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<!-- 表格展示 -->' +
                         '<div class="data-table-wrapper" id="tableWrapper-' + id + '" style="position: relative;">' +
                             renderTableData(table) +
                             decorHtml +
@@ -1802,7 +1812,7 @@
                     // 非最后一层，颜色深一点
                     cls += '';
                 }
-                html += `<div class="${cls}" style="color:'#444';font-size:13px;font-weight:normal">${s}</div>`;
+                html += `<div class="${cls}" style="color:'#000';font-size:13px;font-weight:normal">${s}</div>`;
             });
             return html;
         }
