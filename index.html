@@ -898,11 +898,37 @@
         // 推送本地数据到远端
         async function pushToRemoteNow() {
             try {
-                const shaResp = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_DATA_PATH}`, {
+                // 先拉取远端最新数据，做增量合并（避免覆盖服务端已有改动）
+                const remoteResp = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_DATA_PATH}`, {
                     headers: { 'Authorization': `token ${GH_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
                 });
-                if (!shaResp.ok) { console.error('获取SHA失败'); return false; }
-                const sha = (await shaResp.json()).sha;
+                if (!remoteResp.ok) { console.error('获取远端数据失败'); return false; }
+                const remoteJson = await remoteResp.json();
+                const sha = remoteJson.sha;
+                let remoteData;
+                try {
+                    remoteData = JSON.parse(decodeURIComponent(escape(atob(remoteJson.content))));
+                } catch(e) {
+                    remoteData = JSON.parse(atob(remoteJson.content));
+                }
+                const remotePages = remoteData.tablePages || {};
+
+                // 增量合并：远端有winning而本地为空的，补回本地
+                for (const id in remotePages) {
+                    if (!remotePages[id].records) continue;
+                    const remoteRecords = remotePages[id].records;
+                    const localPage = tablePages[id];
+                    if (!localPage || !localPage.records) continue;
+                    for (const remoteRec of remoteRecords) {
+                        if (!remoteRec.winning) continue;
+                        const localRec = localPage.records.find(r => r.period === remoteRec.period);
+                        if (localRec && !localRec.winning) {
+                            localRec.winning = remoteRec.winning;
+                            console.log(`合并远端winning: ${localPage.name} 期${remoteRec.period} = ${remoteRec.winning}`);
+                        }
+                    }
+                }
+
                 const data = { tablePages, lastUpdate: Date.now() };
                 const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
                 const resp = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_DATA_PATH}`, {
@@ -911,7 +937,7 @@
                     body: JSON.stringify({ message: 'auto: sync from web', content: encoded, sha })
                 });
                 if (resp.ok) {
-                    console.log('推送成功');
+                    console.log('推送成功（含增量合并）');
                     return true;
                 } else {
                     console.error('推送失败:', resp.status);
