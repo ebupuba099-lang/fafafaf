@@ -1,103 +1,102 @@
 #!/usr/bin/env python3
-"""生成新一期9级递减序列，为每个表格添加新期记录"""
-import json
-import os
-import random
-import base64
-import requests
-from datetime import datetime
-import os
+"""发财就手 - 每日生成新一期 v2 (API直写)"""
+import json, os, sys, ssl, random, base64, time
+from urllib.request import Request, urlopen
+from datetime import datetime, timezone, timedelta
 
-GH_TOKEN = os.environ.get('GH_TOKEN', '')
-REPO = 'ebupuba099-lang/fafafaf'
+REPO = os.environ.get('GITHUB_REPOSITORY', 'ebupuba099-lang/facaijiushou')
 DATA_FILE = 'data/lottery_data.json'
+TZ = timezone(timedelta(hours=8))
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
 
-def load_data():
-    headers = {'Authorization': f'token {GH_TOKEN}', 'Accept': 'application/vnd.github.v3.raw'}
-    resp = requests.get(f'https://api.github.com/repos/{REPO}/contents/{DATA_FILE}', headers=headers)
-    resp.raise_for_status()
-    return resp.json()
+def log(msg):
+    print(f'[{datetime.now(TZ).strftime("%H:%M:%S")}] {msg}', flush=True)
 
-def save_data(data):
-    headers = {'Authorization': f'token {GH_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
-    sha_resp = requests.get(f'https://api.github.com/repos/{REPO}/contents/{DATA_FILE}', headers=headers)
-    sha_resp.raise_for_status()
-    sha = sha_resp.json()['sha']
-    content = json.dumps(data, ensure_ascii=False)
-    b64 = base64.b64encode(content.encode('utf-8')).decode()
-    put_resp = requests.put(
-        f'https://api.github.com/repos/{REPO}/contents/{DATA_FILE}',
-        headers=headers,
-        json={'message': 'auto: generate new period', 'content': b64, 'sha': sha}
-    )
-    put_resp.raise_for_status()
-    print("Data saved to repo")
+def github_get(path):
+    token = os.environ.get('GH_TOKEN', '')
+    req = Request(f'https://api.github.com/repos/{REPO}/contents/{path}',
+                  headers={'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json'})
+    resp = urlopen(req, timeout=30, context=ctx)
+    info = json.loads(resp.read().decode())
+    return info['sha'], json.loads(base64.b64decode(info['content']).decode('utf-8'))
 
-def generate_decreasing_sequence():
-    """0-9随机去掉1个，剩下9个随机排列，再逐级递减到1个，共9级"""
+def github_put(path, content, sha, msg):
+    token = os.environ.get('GH_TOKEN', '')
+    b64 = base64.b64encode(json.dumps(content, ensure_ascii=False, indent=2).encode('utf-8')).decode('utf-8')
+    payload = {'message': msg, 'content': b64, 'sha': sha}
+    req = Request(f'https://api.github.com/repos/{REPO}/contents/{path}',
+                  data=json.dumps(payload).encode('utf-8'),
+                  headers={'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json',
+                           'Content-Type': 'application/json'}, method='PUT')
+    resp = urlopen(req, timeout=30, context=ctx)
+    return json.loads(resp.read().decode())
+
+def generate_levels():
     digits = list(range(10))
     random.shuffle(digits)
-    selected = digits[:9]  # 取9个
-    sequences = [''.join(str(d) for d in selected)]
-    current = list(selected)
-    while len(current) > 1:
-        idx = random.randint(0, len(current) - 1)
-        current.pop(idx)
-        sequences.append(''.join(str(d) for d in current))
-    return sequences
-
-def generate_touweihe():
-    """头尾合：独立随机递减序列，和千百十个一样"""
-    return generate_decreasing_sequence()
+    selected = digits[:8]
+    levels = [selected[:]]
+    current = selected[:]
+    for _ in range(7):
+        remove_idx = random.randint(0, len(current) - 1)
+        current = [d for i, d in enumerate(current) if i != remove_idx]
+        levels.append(current[:])
+    return levels
 
 def main():
-    data = load_data()
+    log('===== 生成新期 v2 =====')
     
-    # TZ环境变量已在workflow中设置为Asia/Shanghai，datetime.now()会自动使用
-    today = datetime.now()
-    today_str = today.strftime('%Y-%m-%d')
-    base_date = datetime(2026, 5, 11)
-    days_diff = (today - base_date).days
-    today_period = 2026121 + days_diff
+    sha, data = github_get(DATA_FILE)
+    records = data.get('records', [])
     
-    print(f"Today: {today_str}, Period: {today_period}")
+    if not records:
+        log('无数据')
+        return
     
-    # 为每个表格添加新期记录
-    for table_id, table in data.get('tablePages', {}).items():
-        records = table.get('records', [])
-        name = table.get('name', '?')
-        
-        has_today = any(r.get('period') == today_period for r in records)
-        if not has_today:
-            qian = generate_decreasing_sequence()
-            bai = generate_decreasing_sequence()
-            shi = generate_decreasing_sequence()
-            ge = generate_decreasing_sequence()
-            touweihe = generate_touweihe()
-            
-            new_rec = {
-                'period': today_period,
-                'header': name,
-                'sequences': {'千': qian, '百': bai, '十': shi, '个': ge, '头尾合': touweihe},
-                'winning': ''
-            }
-            records.insert(0, new_rec)
-            print(f"  添加 {name} {today_period}期 (9级序列)")
+    # 找最大期号
+    latest = max(records, key=lambda r: int(str(r['period'])))
+    latest_period = int(str(latest['period']))
+    
+    # 检查是否已开奖
+    if not latest.get('winning'):
+        now_ts = int(datetime.now().timestamp() * 1000)
+        last_attempt = data.get('lastGenerateAttempt', data.get('lastUpdate', 0))
+        stale_ms = now_ts - last_attempt
+        if stale_ms < 2 * 24 * 3600 * 1000:
+            if 'lastGenerateAttempt' not in data:
+                data['lastGenerateAttempt'] = now_ts
+            log(f'{latest_period}期未开奖，跳过')
+            return
         else:
-            print(f"  {name} 已有{today_period}期，跳过")
-        
-        # 最多保留20条
-        if len(records) > 20:
-            table['records'] = records[:20]
+            log(f'{latest_period}期超48h未开奖，跳过生成下一期')
     
-    # 清理toolPages（如果还存在）
-    if 'toolPages' in data:
-        del data['toolPages']
+    next_period = str(latest_period + 1)
+    if next_period in [str(r['period']) for r in records]:
+        log(f'{next_period}期已存在')
+        return
     
-    data['lastUpdate'] = int(today.timestamp() * 1000)
-    save_data(data)
-    print("Generation complete!")
+    # 生成新期
+    positions = ['head', 'hundred', 'ten', 'tail']
+    sequences = {pos: generate_levels() for pos in positions}
+    
+    new_record = {
+        'period': next_period,
+        'sequences': sequences,
+        'winning': '',
+        'hits': {}
+    }
+    records.append(new_record)
+    if len(records) > 50:
+        records = records[-50:]
+    
+    data['records'] = records
+    data['lastUpdate'] = int(datetime.now().timestamp() * 1000)
+    data.pop('lastGenerateAttempt', None)
+    
+    result = github_put(DATA_FILE, data, sha, f'生成{next_period}期')
+    log(f'✅ 已生成{next_period}期: {result["content"]["sha"][:8]}')
 
 if __name__ == '__main__':
     main()
-
